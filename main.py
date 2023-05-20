@@ -13,43 +13,38 @@ global RNN_model
 df = pd.read_csv("dataset/train.csv")
 # перевожу ее в массив
 train_mass_csv = np.array(df)
-train_mass_csv_without_first_row = train_mass_csv[1:]
-
-cleaned_train_mass_csv = [train_mass_csv[0]]
-
-for row in train_mass_csv_without_first_row:
-    if (row[0] != cleaned_train_mass_csv[-1][0]):
-        cleaned_train_mass_csv.append(row)
-
-cleaned_train_mass_csv_numpy = np.array(cleaned_train_mass_csv)
 
 
-train_mass_equal = []
+equal_train_mass = []
 
-count_0, count_1, count_2 = 0, 0, 0
+count_0, count_1, count_2 = (0,0,0)
 
-for row in cleaned_train_mass_csv_numpy:
+for row in train_mass_csv:
     match row[10]:
         case 0:
-            if (count_0 < 200):
-                train_mass_equal.append(row)
+            if (count_0 <= 200):
+                equal_train_mass.append(row)
                 count_0 += 1
         case 1:
-            if (count_1 < 200):
-                train_mass_equal.append(row)
+            if (count_1 <= 200):
+                equal_train_mass.append(row)
                 count_1 += 1
         case 2:
-            if (count_2 < 200):
-                train_mass_equal.append(row)
+            if (count_2 <= 200):
+                equal_train_mass.append(row)
                 count_2 += 1
 
-train_mass_equal = np.array(train_mass_equal) # получил уравновешенную выборку переклассификаций
+train_mass_csv = np.array(equal_train_mass)
 
+print(train_mass_csv)
 
 # Парсим и нормируем train матрицу
-COLUMN_NAMES, normalize_train_matrix = parse_train_mass(train_mass=train_mass_equal, df=df)
+COLUMN_NAMES, normalize_train_matrix = parse_train_mass(train_mass=train_mass_csv, df=df)
 
-normalize_test_matrix = parse_test_answers(train_mass=train_mass_equal)
+normalize_test_matrix = parse_test_answers(train_mass=train_mass_csv)
+
+print(normalize_train_matrix.shape)
+print(normalize_test_matrix.shape)
 
 
 # Кастомная f1 scope метрика
@@ -68,14 +63,14 @@ def root_mean_squared_error(y_true, y_pred):
 def getModel():
     model = keras.Sequential([
         tf.keras.layers.Input(shape=len(normalize_train_matrix[0])),
-        tf.keras.layers.Dense(256, activation="relu"),
-        tf.keras.layers.Dense(128, activation="relu"),
-        tf.keras.layers.Dense(16, activation="relu"),
-        tf.keras.layers.Dense(3, activation="softmax")
+        tf.keras.layers.Dense(16, activation="tanh"),
+        tf.keras.layers.Dense(256, activation="tanh"),
+        tf.keras.layers.Dense(128, activation="tanh"),
+        tf.keras.layers.Dense(16, activation="tanh"),
+        tf.keras.layers.Dense(3, activation="sigmoid")
     ])
-#
-    model.compile(optimizer=tf.optimizers.Ftrl, loss=tf.keras.losses.sparse_categorical_crossentropy, metrics=["accuracy", f1_metric])
-#
+
+    model.compile(optimizer=tf.keras.optimizers.Adam(), loss=tf.keras.losses.mean_squared_error, metrics=[f1_metric])
     return model
 #
 #
